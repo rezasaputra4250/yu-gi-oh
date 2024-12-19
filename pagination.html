@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yu-Gi-Oh! Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card {
+            width: 100px;
+            height: 150px;
+            background-color: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            overflow: hidden;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateY(0deg);
+            transition: transform 0.6s;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            backface-visibility: hidden;
+        }
+        .card .card-back {
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
+        }
+        .card:hover {
+            transform: rotateY(180deg);
+        }
+        .zone {
+            border: 2px dashed #aaa;
+            padding: 20px;
+            margin: 10px;
+            min-height: 200px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        .deck-card {
+            background-color: #333;
+            color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 text-white">
+
+    <div class="flex justify-center p-5">
+        <div class="w-full max-w-6xl">
+            <!-- Field Zone -->
+            <div class="zone" id="field-zone">
+                <h2 class="text-center w-full mb-4">Field Zone</h2>
+                <div class="card" onclick="addCardToField()">Field Spell</div>
+            </div>
+
+            <!-- Deck Zone -->
+            <div class="zone w-1/4" id="deck-zone">
+                <h3 class="w-full text-center mb-2">Deck Zone</h3>
+                <div class="card" id="deck-card" onclick="drawCard()">
+                    <div class="card-back">
+                        Back of the Card
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hand Zone -->
+            <div class="zone mt-4" id="hand-zone">
+                <h3 class="w-full text-center mb-2">Hand Zone</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch the deck from localStorage
+        const getDeckFromLocalStorage = () => {
+            const storedDeck = localStorage.getItem('userDeck');
+            if (storedDeck) {
+                return JSON.parse(storedDeck);  // Parse the stored deck array
+            }
+            return [];  // Return an empty array if no deck is found
+        };
+
+        // Function to create a card with image
+        const createCard = (name, image) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const img = document.createElement('img');
+            img.src = image;
+            img.alt = name;
+            card.appendChild(img);
+            return card;
+        };
+
+        // Fetch card info (including image) from the API
+        const fetchCardImage = (cardName) => {
+            const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const card = data.data[0];  // Get the first card in the response
+                    return card.card_images ? card.card_images[0].image_url : null;
+                })
+                .catch(error => {
+                    console.error('Error fetching card data:', error);
+                    return null;
+                });
+        };
+
+        // Add card to Hand Zone after fetching the image
+        const addCardToHand = async (cardName) => {
+            const imageUrl = await fetchCardImage(cardName);
+            if (imageUrl) {
+                const handZone = document.getElementById('hand-zone');
+                const card = createCard(cardName, imageUrl);
+                handZone.appendChild(card);
+            } else {
+                console.log(`Image not found for ${cardName}`);
+            }
+        };
+
+        // Draw a card from the deck
+        const drawCard = () => {
+            const deck = getDeckFromLocalStorage();
+            if (deck.length > 0) {
+                const drawnCardName = deck.pop();  // Draw a card from the deck
+                localStorage.setItem('userDeck', JSON.stringify(deck));  // Update deck in localStorage
+                addCardToHand(drawnCardName);  // Add it to the hand zone
+                updateDeck(deck);  // Update the Deck Zone
+                showCardFront();  // Show the front of the drawn card in the Deck Zone
+            } else {
+                alert("Deck is empty!");
+            }
+        };
+
+        // Update the Deck Zone with a Draw Card button
+        const updateDeck = (deck) => {
+            const deckZone = document.getElementById('deck-zone');
+            deckZone.innerHTML = "<h3 class='w-full text-center mb-2'>Deck Zone</h3>";
+            deckZone.innerHTML += `<div class="deck-card" onclick="drawCard()">Draw a Card</div>`;
+            if (deck.length === 0) {
+                deckZone.innerHTML += `<div class="deck-card text-red-500">Deck is empty!</div>`;
+            }
+        };
+
+        // Flip the Deck Zone card to show the front (card image)
+        const showCardFront = () => {
+            const deckCard = document.getElementById('deck-card');
+            deckCard.querySelector('.card-back').style.display = 'none';  // Hide the back of the card
+            deckCard.style.transform = 'rotateY(180deg)';  // Flip the card to show the front
+        };
+
+        // Initialize the game by displaying the initial cards in the hand zone
+        document.addEventListener('DOMContentLoaded', () => {
+            const deck = getDeckFromLocalStorage();  // Get the deck from localStorage
+
+            // Add 5 initial cards to Hand Zone
+            for (let i = 0; i < 5 && deck.length > 0; i++) {
+                const cardName = deck[i];
+                addCardToHand(cardName);
+            }
+            updateDeck(deck);  // Update Deck Zone
+        });
+    </script>
+
+</body>
+</html>

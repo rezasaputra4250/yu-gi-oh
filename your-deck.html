@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Deck - Yu-Gi-Oh! Cards</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+  <!-- Navbar -->
+  <nav class="bg-blue-600 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <a href="#" class="text-xl font-semibold">Yu-Gi-Oh! Cards</a>
+      <ul class="flex space-x-6" id="navbar-links">
+        <li><a href="#home" class="hover:text-blue-300">Home</a></li>
+        <li><a href="#cards" class="hover:text-blue-300">Cards</a></li>
+        <li><a href="arena.html" class="hover:text-blue-300">Arena</a></li>
+        <li><a href="your-deck.html" class="hover:text-blue-300">Deck</a></li>
+        <!-- Login and Register Links will be dynamically added or removed -->
+        <li id="login-link"><a href="login.html" class="hover:text-blue-300">Login</a></li>
+        <li id="register-link"><a href="register.html" class="hover:text-blue-300">Register</a></li>
+        <li id="logout-link" style="display:none"><a href="#" class="hover:text-blue-300" id="logout-link-text">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-5 text-center" id="deck">
+    <h1 class="text-3xl font-semibold text-gray-800 mb-5">Your Yu-Gi-Oh! Deck</h1>
+
+    <!-- Deck Section -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-5" id="deck-container">
+      <!-- Cards in deck will be displayed here -->
+    </div>
+
+    <!-- Clear Deck Button - Moved Below Deck -->
+    <div class="mt-5">
+      <button id="clear-deck" class="px-5 py-3 bg-red-500 text-white rounded-lg hover:bg-red-700">Clear Deck</button>
+    </div>
+
+    <!-- Search Bar for Available Cards -->
+    <div class="mb-5">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-3">Search for Cards</h2>
+      <input type="text" id="search-bar" class="px-4 py-2 w-1/2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search by name..." oninput="searchCards()">
+    </div>
+
+    <!-- Available Cards Section -->
+    <h2 class="text-2xl font-semibold text-gray-800 mb-5">Available Cards</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="cards-gallery">
+      <!-- Cards from the search result will be displayed here -->
+    </div>
+
+    <!-- View More Button -->
+    <div id="view-more-container" class="mt-5">
+      <button id="view-more" class="px-5 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-700">View More</button>
+    </div>
+  </div>
+
+  <script>
+    const deckContainer = document.getElementById('deck-container');
+    const cardsGallery = document.getElementById('cards-gallery');
+    const searchBar = document.getElementById('search-bar');
+    const clearDeckButton = document.getElementById('clear-deck');
+    const viewMoreButton = document.getElementById('view-more');
+    const viewMoreContainer = document.getElementById('view-more-container');
+    const loginLink = document.getElementById('login-link');
+    const registerLink = document.getElementById('register-link');
+    const logoutLink = document.getElementById('logout-link');
+    const logoutLinkText = document.getElementById('logout-link-text');
+
+    let deck = JSON.parse(localStorage.getItem('userDeck')) || [];
+    let allCards = [];
+    let cardsToShow = 8;  // Initial number of cards to show (for "View More")
+
+    // Function to check if the user is logged in
+    function checkLoginStatus() {
+      if (localStorage.getItem('loggedIn') === 'true') {
+        loginLink.style.display = 'none';  // Hide login link
+        registerLink.style.display = 'none';  // Hide register link
+        logoutLink.style.display = 'block';  // Show logout link
+      } else {
+        loginLink.style.display = 'block';  // Show login link
+        registerLink.style.display = 'block';  // Show register link
+        logoutLink.style.display = 'none';  // Hide logout link
+      }
+    }
+
+    // Function to log the user out
+    function logout() {
+      localStorage.setItem('loggedIn', 'false');
+      localStorage.removeItem('currentUser');  // Optionally clear the stored user data
+      checkLoginStatus();  // Update the navbar
+      alert('You have been logged out.');
+    }
+
+    // Attach logout function to the logout link
+    logoutLinkText.addEventListener('click', logout);
+
+    // Function to display the deck cards (only images)
+    function displayDeck() {
+      deckContainer.innerHTML = '';
+      deck.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.classList.add('text-center', 'p-2', 'relative');
+        cardElement.innerHTML = `
+          <img src="${card.card_images[0].image_url}" alt="Card" class="object-cover mb-2 cursor-pointer card-${index}" onload="onImageLoad(${index})">
+          <button class="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1" onclick="removeCardFromDeck(${index})">X</button>
+        `;
+        deckContainer.appendChild(cardElement);
+      });
+    }
+
+    // Function to fetch available cards from the API
+    async function fetchAvailableCards() {
+      try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
+        const data = await response.json();
+
+        if (data.data && data.data.length > 0) {
+          allCards = data.data;  // Save all available cards
+          displayAvailableCards(allCards.slice(0, cardsToShow));  // Display initial cards
+        }
+      } catch (error) {
+        console.error('Error fetching available cards:', error);
+      }
+    }
+
+    // Function to display cards from search result
+    function displayAvailableCards(cards) {
+      cardsGallery.innerHTML = '';  // Clear previous results
+      cards.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.classList.add('text-center', 'p-2', 'cursor-pointer');
+        cardElement.innerHTML = `
+          <div class="relative">
+            <img src="${card.card_images[0].image_url}" alt="Card" class="object-cover mb-2" onload="onImageLoad(${index})">
+            <div class="absolute inset-0 flex justify-center items-center bg-gray-500 opacity-50 hidden" id="loading-${index}">
+              <div class="spinner-border animate-spin w-8 h-8 border-t-2 border-white rounded-full"></div>
+            </div>
+          </div>
+        `;
+        cardElement.addEventListener('click', () => addCardToDeck(card));
+        cardsGallery.appendChild(cardElement);
+      });
+    }
+
+    // Function to show the loading spinner when the image is loading
+    function onImageLoad(index) {
+      const loadingElement = document.getElementById(`loading-${index}`);
+      loadingElement.classList.add('hidden');
+    }
+
+    // Function to filter cards based on the search query
+    function searchCards() {
+      const query = searchBar.value.toLowerCase();
+      const filteredCards = allCards.filter(card => card.name.toLowerCase().includes(query));
+      displayAvailableCards(filteredCards);
+    }
+
+    // Function to add a card to the deck (up to 3 identical cards)
+    function addCardToDeck(card) {
+      const cardCount = deck.filter(existingCard => existingCard.id === card.id).length;
+
+      if (cardCount < 3) {
+        deck.push(card);
+        localStorage.setItem('userDeck', JSON.stringify(deck));
+        displayDeck(); // Re-render deck
+      } else {
+        alert('You can only add up to 3 identical cards.');
+      }
+    }
+
+    // Function to remove a card from the deck
+    function removeCardFromDeck(index) {
+      deck.splice(index, 1); // Remove the card from the deck array
+      localStorage.setItem('userDeck', JSON.stringify(deck));
+      displayDeck(); // Re-render deck
+    }
+
+    // Function to clear the deck
+    clearDeckButton.addEventListener('click', () => {
+      deck = [];
+      localStorage.removeItem('userDeck');
+      displayDeck(); // Re-render deck after clearing
+    });
+
+    // View More Button Logic
+    viewMoreButton.addEventListener('click', () => {
+      cardsToShow += 8;  // Increase the number of cards to show
+      displayAvailableCards(allCards.slice(0, cardsToShow));  // Display the next set of cards
+      // If all cards are displayed, hide the "View More" button
+      if (cardsToShow >= allCards.length) {
+        viewMoreContainer.style.display = 'none';
+      }
+    });
+
+    // Initial setup
+    checkLoginStatus();  // Check if the user is logged in
+    displayDeck();
+    fetchAvailableCards();
+  </script>
+
+</body>
+
+</html>

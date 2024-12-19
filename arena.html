@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yu-Gi-Oh! Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card {
+            width: 100px;
+            height: 150px;
+            background-color: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card:hover {
+            transform: scale(1.1);
+        }
+        .zone {
+            border: 2px dashed #aaa;
+            padding: 20px;
+            margin: 10px;
+            min-height: 200px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        .deck-card {
+            background-color: #333;
+            color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 text-white">
+
+    <div class="flex justify-center p-5">
+        <div class="w-full max-w-6xl">
+            <!-- Field Zone -->
+            <div class="zone" id="field-zone">
+                <h2 class="text-center w-full mb-4">Field Zone</h2>
+                <div class="card" onclick="addCardToField()">Field Spell</div>
+            </div>
+
+            <!-- Monster Zones -->
+            <div class="flex justify-between">
+                <div class="zone" id="monster-zone-1">
+                    <h3 class="w-full text-center mb-2">Monster Zone 1</h3>
+                </div>
+                <div class="zone" id="monster-zone-2">
+                    <h3 class="w-full text-center mb-2">Monster Zone 2</h3>
+                </div>
+                <div class="zone" id="monster-zone-3">
+                    <h3 class="w-full text-center mb-2">Monster Zone 3</h3>
+                </div>
+                <div class="zone" id="monster-zone-4">
+                    <h3 class="w-full text-center mb-2">Monster Zone 4</h3>
+                </div>
+                <div class="zone" id="monster-zone-5">
+                    <h3 class="w-full text-center mb-2">Monster Zone 5</h3>
+                </div>
+            </div>
+
+            <!-- Spell & Trap Zones -->
+            <div class="flex justify-between mt-4">
+                <div class="zone" id="spell-trap-zone-1">
+                    <h3 class="w-full text-center mb-2">Spell/Trap Zone 1</h3>
+                </div>
+                <div class="zone" id="spell-trap-zone-2">
+                    <h3 class="w-full text-center mb-2">Spell/Trap Zone 2</h3>
+                </div>
+                <div class="zone" id="spell-trap-zone-3">
+                    <h3 class="w-full text-center mb-2">Spell/Trap Zone 3</h3>
+                </div>
+                <div class="zone" id="spell-trap-zone-4">
+                    <h3 class="w-full text-center mb-2">Spell/Trap Zone 4</h3>
+                </div>
+                <div class="zone" id="spell-trap-zone-5">
+                    <h3 class="w-full text-center mb-2">Spell/Trap Zone 5</h3>
+                </div>
+            </div>
+
+            <!-- Deck, Graveyard, and Banished Zones -->
+            <div class="flex justify-between mt-4">
+                <div class="zone w-1/4" id="deck-zone">
+                    <h3 class="w-full text-center mb-2">Deck Zone</h3>
+                    <div class="deck-card" onclick="drawCard()">Draw a Card</div>
+                </div>
+                <div class="zone w-1/4" id="graveyard-zone">
+                    <h3 class="w-full text-center mb-2">Graveyard Zone</h3>
+                </div>
+                <div class="zone w-1/4" id="banished-zone">
+                    <h3 class="w-full text-center mb-2">Banished Zone</h3>
+                </div>
+            </div>
+
+            <!-- Hand Zone -->
+            <div class="zone mt-4" id="hand-zone">
+                <h3 class="w-full text-center mb-2">Hand Zone</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Retrieve the deck from localStorage (if available), otherwise use a default deck
+        const userDeck = JSON.parse(localStorage.getItem('userDeck')) || [
+            { name: "Monster Card 1", image: "https://via.placeholder.com/100x150?text=Monster+1" },
+            { name: "Monster Card 2", image: "https://via.placeholder.com/100x150?text=Monster+2" },
+            { name: "Monster Card 3", image: "https://via.placeholder.com/100x150?text=Monster+3" },
+            { name: "Spell Card 1", image: "https://via.placeholder.com/100x150?text=Spell+1" },
+            { name: "Trap Card 1", image: "https://via.placeholder.com/100x150?text=Trap+1" }
+        ];
+
+        // Function to create a card with an image
+        const createCard = (name, image) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const img = document.createElement('img');
+            img.src = image;
+            img.alt = name;
+            card.appendChild(img);
+            return card;
+        };
+
+        // Add card to Hand Zone
+        const addCardToHand = (cardText, image) => {
+            const handZone = document.getElementById('hand-zone');
+            const card = createCard(cardText, image);
+            handZone.appendChild(card);
+        };
+
+        // Draw a card from the deck
+        const drawCard = () => {
+            if (userDeck.length > 0) {
+                const drawnCard = userDeck.pop();  // Draw a card from the deck
+                addCardToHand(drawnCard.name, drawnCard.image);  // Add it to the hand zone
+                updateDeck();  // Update the Deck Zone
+            } else {
+                alert("Deck is empty!");
+            }
+        };
+
+        // Update the Deck Zone with a Draw Card button
+        const updateDeck = () => {
+            const deckZone = document.getElementById('deck-zone');
+            deckZone.innerHTML = "<h3 class='w-full text-center mb-2'>Deck Zone</h3>";
+            deckZone.innerHTML += `<div class="deck-card" onclick="drawCard()">Draw a Card</div>`;
+            if (userDeck.length === 0) {
+                deckZone.innerHTML += `<div class="deck-card text-red-500">Deck is empty!</div>`;
+            }
+        };
+
+        // Initialize the game by displaying the initial cards in the hand zone
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add 5 initial cards to Hand Zone
+            for (let i = 0; i < 5 && userDeck.length > 0; i++) {
+                const card = userDeck.pop();
+                addCardToHand(card.name, card.image);
+            }
+            updateDeck();  // Update Deck Zone
+        });
+    </script>
+
+</body>
+</html>
