@@ -75,7 +75,7 @@ function moveCardToZone(cardImage) {
     let zone;
 
     // Cek jenis kartu dan tentukan zona tujuan
-    if (cardType === 'Spell Card') {
+    if (cardType === 'Spell Card' || cardType == 'Trap Card') {
         // Periksa zona satu per satu
         zoneId = 'spell-trap-zone-1';
         zone = document.getElementById(zoneId);
