@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display Cards with Modal</title>
+
+  <!-- Menggunakan Tailwind CSS dari CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+  <!-- Container untuk menampilkan gambar -->
+  <div id="cardContainer" class="flex flex-wrap justify-center p-4"></div>
+
+  <!-- Modal untuk menampilkan gambar ukuran penuh -->
+  <div id="imageModal" class="fixed  inset-0 bg-gray-900 bg-opacity-75 hidden justify-center items-center z-50">
+    <div class="relative flex justify-center items-center max-h-full max-w-full">
+      <button id="closeModal" class="absolute top-2 right-2 text-white text-3xl">&times;</button>
+      <!-- Mengubah ukuran gambar dalam modal dan memposisikannya di tengah -->
+      <img id="modalImage" src="" alt="Full Image" class="my-10 max-w-4xl max-h-[80vh] mx-auto">
+    </div>
+  </div>
+
+  <script>
+    // Ambil data kartu yang disimpan di localStorage
+    let userDeck = localStorage.getItem('userDeck');
+
+    // Jika ada data dalam localStorage
+    if (userDeck) {
+      try {
+        // Mengubah string JSON menjadi array objek
+        userDeck = JSON.parse(userDeck);
+
+        // Cek apakah userDeck adalah array dan memiliki elemen
+        if (Array.isArray(userDeck) && userDeck.length > 0) {
+          let cardContainer = document.getElementById('cardContainer');
+
+          // Loop melalui setiap kartu dan tampilkan
+          userDeck.forEach(card => {
+            // Mengambil URL gambar kartu dari array card_images
+            let cardImageUrl = card.card_images && card.card_images[0] && card.card_images[0].image_url_small;
+
+            if (cardImageUrl) {
+              // Membuat elemen gambar untuk kartu
+              let cardImage = document.createElement('img');
+              cardImage.src = cardImageUrl;
+
+              // Menambahkan kelas Tailwind untuk styling gambar
+              cardImage.classList.add('w-40', 'h-auto', 'm-2', 'shadow-md', 'cursor-pointer');
+
+              // Menambahkan event listener untuk menampilkan modal saat gambar diklik
+              cardImage.addEventListener('click', () => {
+                openModal(card.card_images[0].image_url); // Gambar ukuran besar
+              });
+
+              // Menambahkan gambar ke dalam container
+              cardContainer.appendChild(cardImage);
+            } else {
+              // Jika tidak ada gambar, tampilkan teks placeholder
+              let noImageText = document.createElement('p');
+              noImageText.innerText = 'No image available';
+              noImageText.classList.add('text-gray-500', 'text-center', 'mt-2');
+
+              // Menambahkan teks ke dalam container
+              cardContainer.appendChild(noImageText);
+            }
+          });
+        } else {
+          document.getElementById('cardContainer').innerText = 'No valid cards in the deck.';
+        }
+      } catch (e) {
+        console.error('Terjadi kesalahan saat parsing JSON:', e);
+        document.getElementById('cardContainer').innerText = 'Error loading card data.';
+      }
+    } else {
+      // Jika tidak ada data kartu dalam localStorage
+      document.getElementById('cardContainer').innerText = 'No cards selected yet.';
+    }
+
+    // Fungsi untuk membuka modal dengan gambar besar
+    function openModal(imageUrl) {
+      const modal = document.getElementById('imageModal');
+      const modalImage = document.getElementById('modalImage');
+
+      modal.classList.remove('hidden'); // Menampilkan modal
+      modalImage.src = imageUrl; // Menampilkan gambar di modal
+    }
+
+    // Menambahkan event listener untuk menutup modal saat tombol close diklik
+    document.getElementById('closeModal').addEventListener('click', () => {
+      document.getElementById('imageModal').classList.add('hidden'); // Menyembunyikan modal
+    });
+
+    // Menutup modal jika area di luar gambar diklik
+    document.getElementById('imageModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        document.getElementById('imageModal').classList.add('hidden'); // Menyembunyikan modal
+      }
+    });
+  </script>
+
+</body>
+
+</html>
