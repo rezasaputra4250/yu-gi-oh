@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Info Table with Pagination</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+  <!-- Navbar -->
+  <nav class="bg-blue-600 p-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <a href="#" class="text-white text-2xl font-semibold">Yu-Gi-Oh</a>
+      <div id="navbar-links" class="space-x-6">
+        <!-- Links will be dynamically added based on login status -->
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-lg mt-6">
+    <h1 class="text-2xl font-semibold mb-6">Card Info</h1>
+
+    <!-- Search bar -->
+    <div class="mb-4 flex items-center space-x-2">
+      <input type="text" id="search-input" placeholder="Search by name or type..."
+        class="px-4 py-2 w-full rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+
+    <!-- Table -->
+    <table class="min-w-full table-auto border-collapse">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="py-3 px-4 border-b">Name</th>
+          <th class="py-3 px-4 border-b">Type</th>
+          <th class="py-3 px-4 border-b">Description</th>
+          <th class="py-3 px-4 border-b">Card Image</th>
+          <th class="py-3 px-4 border-b">Price</th>
+          <th class="py-3 px-4 border-b">Link</th>
+        </tr>
+      </thead>
+      <tbody id="cards-table-body">
+        <!-- Table rows will be inserted here -->
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div id="pagination" class="flex justify-center items-center space-x-4 mt-6">
+      <button id="prev" class="px-4 py-2 bg-blue-500 text-white rounded-md" disabled>Prev</button>
+      <span id="page-number" class="text-lg font-semibold">Page 1</span>
+      <button id="next" class="px-4 py-2 bg-blue-500 text-white rounded-md">Next</button>
+    </div>
+  </div>
+
+  <script>
+    const cardsPerPage = 5;
+    let currentPage = 1;
+    let totalPages = 1;
+    let cardData = [];
+    let filteredData = [];
+
+    // Simulate login status
+    let loggedIn = true;  // Set to true to show Logout, false to show Login/Register
+
+    // Fetch data from the cardinfo.json file
+    fetch('cardinfo.json')
+      .then(response => response.json())
+      .then(data => {
+        cardData = data.data;
+        filteredData = cardData; // Initially, all data is displayed
+        renderTable(currentPage);
+        updatePagination();
+      })
+      .catch(error => console.error('Error fetching card data:', error));
+
+    // Render table based on current page
+    function renderTable(page) {
+      const start = (page - 1) * cardsPerPage;
+      const end = start + cardsPerPage;
+      const paginatedData = filteredData.slice(start, end);
+
+      const tableBody = document.getElementById('cards-table-body');
+      tableBody.innerHTML = '';
+
+      paginatedData.forEach(card => {
+        const row = document.createElement('tr');
+        row.classList.add('border-b');
+
+        row.innerHTML = `
+          <td class="py-2 px-4">${card.name}</td>
+          <td class="py-2 px-4">${card.type}</td>
+          <td class="py-2 px-4">${card.desc}</td>
+          <td class="py-2 px-4"><img src="${card.card_images[0].image_url_small}" alt="${card.name}" class="w-16 h-16 object-cover rounded-md"></td>
+          <td class="py-2 px-4">
+            <ul class="space-y-1 text-sm">
+              <li>Cardmarket: $${card.card_prices[0].cardmarket_price}</li>
+              <li>TCGPlayer: $${card.card_prices[0].tcgplayer_price}</li>
+              <li>eBay: $${card.card_prices[0].ebay_price}</li>
+              <li>Amazon: $${card.card_prices[0].amazon_price}</li>
+            </ul>
+          </td>
+          <td class="py-2 px-4"><a href="${card.ygoprodeck_url}" target="_blank" class="text-blue-500">View Card</a></td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Update pagination info
+    function updatePagination() {
+      totalPages = Math.ceil(filteredData.length / cardsPerPage);
+      document.getElementById('page-number').innerText = `Page ${currentPage}`;
+      document.getElementById('prev').disabled = currentPage === 1;
+      document.getElementById('next').disabled = currentPage === totalPages;
+    }
+
+    // Pagination buttons event listeners
+    document.getElementById('prev').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable(currentPage);
+        updatePagination();
+      }
+    });
+
+    document.getElementById('next').addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable(currentPage);
+        updatePagination();
+      }
+    });
+
+    // Search input event listener
+    document.getElementById('search-input').addEventListener('input', (event) => {
+      const searchTerm = event.target.value.toLowerCase();
+
+      // Filter data based on name or type
+      filteredData = cardData.filter(card =>
+        card.name.toLowerCase().includes(searchTerm) ||
+        card.type.toLowerCase().includes(searchTerm)
+      );
+
+      currentPage = 1; // Reset to first page
+      renderTable(currentPage);
+      updatePagination();
+    });
+
+    // Function to toggle Navbar links based on login status
+    function toggleNavbarLinks() {
+      const navbarLinks = document.getElementById('navbar-links');
+
+      if (loggedIn) {
+        navbarLinks.innerHTML = `
+          <a href="index.html" class="text-white hover:text-gray-300">Home</a>
+          <a href="your-card.html" class="text-white hover:text-gray-300">Card</a>
+          <a href="your-deck.html" class="text-white hover:text-gray-300">Deck</a>
+          <a href="arena.html" class="text-white hover:text-gray-300">Arena</a>
+          <a href="logout.html" class="text-white hover:text-gray-300">Logout</a>
+        `;
+      } else {
+        navbarLinks.innerHTML = `
+          <a href="index.html" class="text-white hover:text-gray-300">Home</a>
+          <a href="your-card.html" class="text-white hover:text-gray-300">Card</a>
+          <a href="your-deck.html" class="text-white hover:text-gray-300">Deck</a>
+          <a href="arena.html" class="text-white hover:text-gray-300">Arena</a>
+          <a href="login.html" class="text-white hover:text-gray-300">Login</a>
+          <a href="register.html" class="text-white hover:text-gray-300">Register</a>
+        `;
+      }
+    }
+
+    // Call function to initialize the navbar links based on the login status
+    toggleNavbarLinks();
+  </script>
+</body>
+
+</html>
